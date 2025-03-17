@@ -72,3 +72,54 @@ public class FilterCSVToExcelWithMultipleSheetsCorrected {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class AutoSizeExcelColumns {
+
+    public static void main(String[] args) {
+        String filePath = "input.xlsx"; // Replace with your file path
+
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = WorkbookFactory.create(fis);
+             FileOutputStream fos = new FileOutputStream(filePath)) {
+
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                autoSizeColumns(sheet);
+            }
+
+            workbook.write(fos);
+            System.out.println("Columns auto-sized in all sheets.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void autoSizeColumns(Sheet sheet) {
+        int lastColumn = 0;
+        for (Row row : sheet) {
+            if (row != null) {
+                lastColumn = Math.max(lastColumn, row.getLastCellNum());
+            }
+        }
+        for (int i = 0; i < lastColumn; i++) {
+            sheet.autoSizeColumn(i);
+        }
+    }
+}
