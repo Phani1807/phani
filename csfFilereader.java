@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FilterCSVToExcelWithMultipleSheets {
+public class FilterCSVToExcelWithMultipleSheetsCorrected {
 
     public static void main(String[] args) {
         String csvFilePath = "input.csv";
@@ -23,11 +23,13 @@ public class FilterCSVToExcelWithMultipleSheets {
             Sheet openSheet = workbook.createSheet("Open Status");
             Sheet inProgressOrReviewSheet = workbook.createSheet("In Progress/Review");
 
-            List<CSVRecord> openRecords = csvParser.getRecords().stream()
+            List<CSVRecord> allRecords = csvParser.getRecords(); // Read all records into a list
+
+            List<CSVRecord> openRecords = allRecords.stream()
                     .filter(record -> "Open".equalsIgnoreCase(record.get("Status")))
                     .collect(Collectors.toList());
 
-            List<CSVRecord> inProgressOrReviewRecords = csvParser.getRecords().stream()
+            List<CSVRecord> inProgressOrReviewRecords = allRecords.stream()
                     .filter(record -> !"Open".equalsIgnoreCase(record.get("Status")))
                     .collect(Collectors.toList());
 
