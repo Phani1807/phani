@@ -123,3 +123,50 @@ public class AutoSizeExcelColumns {
         }
     }
 }
+
+
+
+
+
+
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class UpdateExcelColumnHeaders {
+
+    public static void main(String[] args) {
+        String filePath = "input.xlsx"; // Replace with your file path
+
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = WorkbookFactory.create(fis);
+             FileOutputStream fos = new FileOutputStream(filePath)) {
+
+            Sheet sheet = workbook.getSheetAt(0); // Assuming the headers are in the first sheet
+
+            Row headerRow = sheet.getRow(0); // Assuming the headers are in the first row
+
+            if (headerRow != null) {
+                for (Cell cell : headerRow) {
+                    if (cell.getCellType() == CellType.STRING) {
+                        String cellValue = cell.getStringCellValue();
+                        if (cellValue.startsWith("CustomField(") && cellValue.endsWith(")")) {
+                            String newCellValue = cellValue.substring("CustomField(".length(), cellValue.length() - 1);
+                            cell.setCellValue(newCellValue);
+                        }
+                    }
+                }
+            }
+
+            workbook.write(fos);
+            System.out.println("Column headers updated.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
