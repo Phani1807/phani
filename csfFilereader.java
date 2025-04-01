@@ -170,3 +170,81 @@ public class UpdateExcelColumnHeaders {
         }
     }
 }
+
+
+
+
+
+
+
+
+import com.codoid.products.fillo.Connection;
+import com.codoid.products.fillo.Fillo;
+import com.codoid.products.fillo.Recordset;
+
+public class FilloJiraMigration {
+
+    public static void main(String[] args) {
+        String excelFilePath = "path/to/your/jira_data.xlsx"; // Replace with your Excel file path
+        Fillo fillo = new Fillo();
+        Connection connection = null;
+
+        try {
+            connection = fillo.getConnection(excelFilePath);
+
+            String issueKeyToUpdate = "hello"; // The issue key you're working with
+
+            // 1. Update (Optional, if you have any update logic)
+            // Example: Update a specific column based on the issue key
+            String updateQuery = "UPDATE openjiras SET status='In Progress' WHERE issuekey='" + issueKeyToUpdate + "'";
+            connection.executeUpdate(updateQuery);
+            System.out.println("Update successful (if applicable).");
+
+            // 2. Select data from openjiras
+            String selectQuery = "SELECT * FROM openjiras WHERE issuekey='" + issueKeyToUpdate + "'";
+            Recordset recordset = connection.executeQuery(selectQuery);
+
+            if (recordset.next()) { // Check if a record was found
+                // Build the insert query
+                StringBuilder insertQueryBuilder = new StringBuilder("INSERT INTO progressjiras (");
+                StringBuilder valuesBuilder = new StringBuilder("VALUES (");
+
+                // Get column names from the recordset
+                for (int i = 0; i < recordset.getFieldNames().size(); i++) {
+                    insertQueryBuilder.append(recordset.getFieldNames().get(i));
+                    valuesBuilder.append("'").append(recordset.getField(recordset.getFieldNames().get(i))).append("'");
+
+                    if (i < recordset.getFieldNames().size() - 1) {
+                        insertQueryBuilder.append(", ");
+                        valuesBuilder.append(", ");
+                    }
+                }
+
+                insertQueryBuilder.append(") ");
+                valuesBuilder.append(")");
+
+                // Combine the insert query
+                String insertQuery = insertQueryBuilder.toString() + valuesBuilder.toString();
+                connection.executeUpdate(insertQuery);
+                System.out.println("Insert into progressjiras successful.");
+
+                // Optionally, delete the row from openjiras if needed
+                String deleteQuery = "DELETE FROM openjiras WHERE issuekey='" + issueKeyToUpdate + "'";
+                connection.executeUpdate(deleteQuery);
+                System.out.println("Delete from openjiras successful.");
+
+            } else {
+                System.out.println("No record found with issuekey: " + issueKeyToUpdate);
+            }
+
+            recordset.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+    }
+}
