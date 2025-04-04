@@ -248,3 +248,55 @@ public class FilloJiraMigration {
         }
     }
 }
+
+
+
+
+
+
+package april04;
+import java.util.Properties;
+import javax.mail.*;
+import javax.mail.internet.*;
+
+public class OutlookSmtpExample {
+
+    public static void main(String[] args) {
+
+        final String username = "your_outlook_email@outlook.com"; // Replace with your Outlook email
+        final String password = "your_outlook_password"; // Replace with your Outlook password or app password
+
+        String host = "smtp-mail.outlook.com"; // Outlook SMTP server
+        int port = 587; // Outlook SMTP port
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true"); // Enable STARTTLS
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", port);
+
+        Session session = Session.getInstance(props,
+                new javax.mail.Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(username, password);
+                    }
+                });
+
+        try {
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(username));
+            message.setRecipients(Message.RecipientType.TO,
+                    InternetAddress.parse("recipient_email@example.com")); // Replace with recipient
+            message.setSubject("Testing Outlook SMTP");
+            message.setText("Hello, this is a test email sent using Outlook SMTP.");
+
+            Transport.send(message);
+
+            System.out.println("Email sent successfully!");
+
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+}
