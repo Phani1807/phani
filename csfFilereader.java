@@ -300,3 +300,67 @@ public class OutlookSmtpExample {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class CsvToXlsxConverter {
+
+    public static void main(String[] args) {
+        String csvFilePath = "input.csv"; // Replace with your CSV file path
+        String xlsxFilePath = "output.xlsx"; // Replace with your desired XLSX file path
+
+        try {
+            convertCsvToXlsx(csvFilePath, xlsxFilePath);
+            System.out.println("CSV to XLSX conversion successful!");
+        } catch (IOException e) {
+            System.err.println("Error converting CSV to XLSX: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static void convertCsvToXlsx(String csvFilePath, String xlsxFilePath) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Sheet1");
+
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFilePath))) {
+            String line;
+            int rowNum = 0;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(","); // Assuming comma-separated values
+
+                Row row = sheet.createRow(rowNum++);
+                for (int colNum = 0; colNum < values.length; colNum++) {
+                    Cell cell = row.createCell(colNum);
+                    cell.setCellValue(values[colNum]);
+                }
+            }
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(xlsxFilePath)) {
+            workbook.write(fos);
+        }
+        workbook.close(); // important to close the workbook to release resources.
+    }
+}
