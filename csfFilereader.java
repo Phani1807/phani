@@ -111,9 +111,6 @@ public class MergeDuplicateColumns {
 
 
 
-
-
-
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -123,26 +120,25 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-public class MergeSpecificColumns {
+public class MergeSpecificColumnsInSameFile {
 
     public static void main(String[] args) {
         String filePath = "your_excel_file.xlsx"; // Replace with your file path
-        String outputFilePath = "output_excel_file.xlsx";
         List<String> columnsToMerge = Arrays.asList("inward", "outward", "inward 2", "outward 2");
         String targetColumnName = "Issue_Link";
 
         try (FileInputStream fis = new FileInputStream(filePath);
-             Workbook workbook = new XSSFWorkbook(fis)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
 
             if (sheet != null) {
                 mergeSpecificColumns(sheet, columnsToMerge, targetColumnName);
 
-                try (FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+                try (FileOutputStream fos = new FileOutputStream(filePath)) { // Save to the same file
                     workbook.write(fos);
                 }
-                System.out.println("Specific columns merged and saved to: " + outputFilePath);
+                System.out.println("Specific columns merged and saved to the same file: " + filePath);
             } else {
                 System.out.println("Sheet not found.");
             }
