@@ -106,21 +106,23 @@ public class MergeDuplicateColumnsSameFile {
     }
 }
 
+package april04;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MergeSpecificColumnsInSameFile {
+public class MergeToInwardColumn {
 
     public static void main(String[] args) {
-        String filePath = "your_excel_file.xlsx"; // Replace with your file path
+    	String filePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\FEED_MSTR.xlsx";
         List<String> columnsToMerge = Arrays.asList("inward", "outward", "inward 2", "outward 2");
-        String targetColumnName = "Issue_Link";
+        String targetColumnName = "inward"; // Merge into the "inward" column
 
         try (FileInputStream fis = new FileInputStream(filePath);
              XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
@@ -130,10 +132,10 @@ public class MergeSpecificColumnsInSameFile {
             if (sheet != null) {
                 mergeSpecificColumns(sheet, columnsToMerge, targetColumnName);
 
-                try (FileOutputStream fos = new FileOutputStream(filePath)) { // Save to the same file
+                try (FileOutputStream fos = new FileOutputStream(filePath)) {
                     workbook.write(fos);
                 }
-                System.out.println("Specific columns merged and saved to the same file: " + filePath);
+                System.out.println("Columns merged into 'inward' column and saved to: " + filePath);
             } else {
                 System.out.println("Sheet not found.");
             }
@@ -150,7 +152,7 @@ public class MergeSpecificColumnsInSameFile {
         }
 
         int targetColumnIndex = -1;
-        List<Integer> sourceColumnIndices = new java.util.ArrayList<>();
+        List<Integer> sourceColumnIndices = new ArrayList<>();
 
         // Find the indices of the columns to merge and the target column
         for (int i = 0; i < headerRow.getLastCellNum(); i++) {
@@ -159,13 +161,14 @@ public class MergeSpecificColumnsInSameFile {
                 String columnName = cell.getStringCellValue().trim();
                 if (columnsToMerge.contains(columnName)) {
                     sourceColumnIndices.add(i);
-                } else if (columnName.equals(targetColumnName)) {
-                    targetColumnIndex = i;
+                    if (columnName.equals(targetColumnName)) {
+                        targetColumnIndex = i;
+                    }
                 }
             }
         }
 
-        // If the target column doesn't exist, create it
+        // Ensure "inward" column exists
         if (targetColumnIndex == -1) {
             targetColumnIndex = headerRow.getLastCellNum();
             Cell newHeaderCell = headerRow.createCell(targetColumnIndex);
@@ -180,13 +183,12 @@ public class MergeSpecificColumnsInSameFile {
                 for (int columnIndex : sourceColumnIndices) {
                     Cell cell = row.getCell(columnIndex);
                     if (cell != null && cell.getCellType() != CellType.BLANK) {
-
                         String value = "";
-                        if(cell.getCellType() == CellType.STRING){
+                        if (cell.getCellType() == CellType.STRING) {
                             value = cell.getStringCellValue();
-                        }else if (cell.getCellType() == CellType.NUMERIC){
+                        } else if (cell.getCellType() == CellType.NUMERIC) {
                             value = String.valueOf(cell.getNumericCellValue());
-                        }else if (cell.getCellType() == CellType.BOOLEAN){
+                        } else if (cell.getCellType() == CellType.BOOLEAN) {
                             value = String.valueOf(cell.getBooleanCellValue());
                         }
 
@@ -201,23 +203,53 @@ public class MergeSpecificColumnsInSameFile {
 
                 Cell targetCell = row.getCell(targetColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
                 targetCell.setCellValue(mergedValues.toString());
+            }
+        }
 
-                // Clear the source columns
-                for (int columnIndex : sourceColumnIndices) {
-                    Cell cellToRemove = row.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-                    cellToRemove.setBlank();
+        // Delete the source columns (except for the target)
+        for (int i = sourceColumnIndices.size() - 1; i >= 0; i--) {
+            int columnIndexToDelete = sourceColumnIndices.get(i);
+            if (columnIndexToDelete != targetColumnIndex) {
+                deleteColumn(sheet, columnIndexToDelete);
+            }
+        }
+    }
 
+    private static void deleteColumn(Sheet sheet, int columnIndex) {
+        for (int rowIndex = 0; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row != null) {
+            	if(row.getCell(columnIndex)==null) continue;
+                row.removeCell(row.getCell(columnIndex));
+                for (int i = columnIndex + 1; i <= row.getLastCellNum() + 1; i++) {
+                    Cell currentCell = row.getCell(i);
+                    if (currentCell != null) {
+                        Cell prevCell = row.createCell(i - 1, currentCell.getCellType());
+                        copyCell(currentCell, prevCell);
+                        row.removeCell(currentCell);
+                    }
                 }
             }
         }
-        for (int columnIndex : sourceColumnIndices) {
-            Cell cellToRemove = headerRow.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-            cellToRemove.setBlank();
+    }
+
+    private static void copyCell(Cell oldCell, Cell newCell) {
+        if (oldCell.getCellType() == CellType.STRING) {
+            newCell.setCellValue(oldCell.getStringCellValue());
+        } else if (oldCell.getCellType() == CellType.NUMERIC) {
+            newCell.setCellValue(oldCell.getNumericCellValue());
+        } else if (oldCell.getCellType() == CellType.BOOLEAN) {
+            newCell.setCellValue(oldCell.getBooleanCellValue());
+        } else if (oldCell.getCellType() == CellType.FORMULA) {
+            newCell.setCellFormula(oldCell.getCellFormula());
+        } else if (oldCell.getCellType() == CellType.ERROR) {
+            newCell.setCellErrorValue(oldCell.getErrorCellValue());
+        } 
+        if (oldCell.getCellStyle() != null) {
+            newCell.setCellStyle(oldCell.getCellStyle());
         }
     }
 }
-
-
 
 
 
