@@ -1,110 +1,109 @@
+
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class ExcelSheetSplitterSingleFile {
+public class MergeDuplicateColumns {
 
     public static void main(String[] args) {
-        String inputFilePath = "input.xlsx"; // Replace with your input file path
-        String outputFilePath = "output.xlsx"; // output file with two sheets
+    	String filePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\FEED_MSTR.xlsx"; // Replace with your input file path
+        String outputFilePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\output.xlsx"; // Replace with your output file path
 
-        try (FileInputStream inputStream = new FileInputStream(inputFilePath);
-             Workbook inputWorkbook = new XSSFWorkbook(inputStream);
-             Workbook outputWorkbook = new XSSFWorkbook()) {
 
-            Sheet inputSheet = inputWorkbook.getSheetAt(0); // Assuming data is in the first sheet
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
 
-            Sheet openSheet = outputWorkbook.createSheet("Open");
-            Sheet inReviewInProgressSheet = outputWorkbook.createSheet("In Review/In Progress");
+            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
 
-            int openRowCount = 0;
-            int inReviewInProgressRowCount = 0;
+            if (sheet != null) {
+                mergeDuplicateColumns(sheet);
 
-            // Copy header row
-            Row headerRow = inputSheet.getRow(0);
-            if (headerRow != null) {
-                copyRow(headerRow, openSheet.createRow(openRowCount++));
-                copyRow(headerRow, inReviewInProgressSheet.createRow(inReviewInProgressRowCount++));
-            }
-
-            // Iterate through data rows
-            for (int rowIndex = 1; rowIndex <= inputSheet.getLastRowNum(); rowIndex++) {
-                Row dataRow = inputSheet.getRow(rowIndex);
-                if (dataRow != null) {
-                    Cell statusCell = dataRow.getCell(getColumnIndex(headerRow, "status")); // Assuming "status" column exists.
-
-                    if (statusCell != null) {
-                        String status = statusCell.getStringCellValue().trim();
-
-                        if (status.equalsIgnoreCase("open")) {
-                            copyRow(dataRow, openSheet.createRow(openRowCount++));
-                        } else if (status.equalsIgnoreCase("in review") || status.equalsIgnoreCase("in progress")) {
-                            copyRow(dataRow, inReviewInProgressSheet.createRow(inReviewInProgressRowCount++));
-                        }
-                    }
+                try (FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+                    workbook.write(fos);
                 }
+                System.out.println("Duplicate columns merged and saved to: " + outputFilePath);
+            } else {
+                System.out.println("Sheet not found.");
             }
-
-            // Write the output workbook to a single file
-            try (FileOutputStream outputStream = new FileOutputStream(outputFilePath)) {
-                outputWorkbook.write(outputStream);
-            }
-
-            System.out.println("Excel sheets split successfully into a single file.");
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void copyRow(Row sourceRow, Row destinationRow) {
-        for (int i = 0; i < sourceRow.getLastCellNum(); i++) {
-            Cell oldCell = sourceRow.getCell(i);
-            Cell newCell = destinationRow.createCell(i);
+    private static void mergeDuplicateColumns(Sheet sheet) {
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            return; // No header row, nothing to merge
+        }
 
-            if (oldCell != null) {
-                copyCell(oldCell, newCell);
+        Map<String, List<Integer>> columnIndices = new HashMap<>();
+
+        // Identify duplicate column names and their indices
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            Cell cell = headerRow.getCell(i);
+            if (cell != null && cell.getCellType() == CellType.STRING) {
+                String columnName = cell.getStringCellValue().trim();
+                columnIndices.computeIfAbsent(columnName, k -> new ArrayList<>()).add(i);
             }
         }
-    }
 
-    private static void copyCell(Cell oldCell, Cell newCell) {
-        switch (oldCell.getCellType()) {
-            case STRING:
-                newCell.setCellValue(oldCell.getStringCellValue());
-                break;
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(oldCell)) {
-                    newCell.setCellValue(oldCell.getDateCellValue());
-                } else {
-                    newCell.setCellValue(oldCell.getNumericCellValue());
-                }
-                break;
-            case BOOLEAN:
-                newCell.setCellValue(oldCell.getBooleanCellValue());
-                break;
-            case FORMULA:
-                newCell.setCellFormula(oldCell.getCellFormula());
-                break;
-            case BLANK:
-                break;
-            default:
-                break;
-        }
-    }
+        // Merge duplicate columns
+        for (Map.Entry<String, List<Integer>> entry : columnIndices.entrySet()) {
+            List<Integer> indices = entry.getValue();
+            if (indices.size() > 1) {
+                int targetColumnIndex = indices.get(0); // The first column will be the target
 
-    private static int getColumnIndex(Row headerRow, String columnName) {
-        if (headerRow != null) {
-            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                Cell cell = headerRow.getCell(i);
-                if (cell != null && cell.getStringCellValue().equalsIgnoreCase(columnName)) {
-                    return i;
+                for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                    Row row = sheet.getRow(rowIndex);
+                    if (row != null) {
+                        StringBuilder mergedValues = new StringBuilder();
+                        for (int columnIndex : indices) {
+                            Cell cell = row.getCell(columnIndex);
+                            if (cell != null && cell.getCellType() != CellType.BLANK) {
+
+                                String value = "";
+                                if(cell.getCellType() == CellType.STRING){
+                                    value = cell.getStringCellValue();
+                                }else if (cell.getCellType() == CellType.NUMERIC){
+                                    value = String.valueOf(cell.getNumericCellValue());
+                                }else if (cell.getCellType() == CellType.BOOLEAN){
+                                    value = String.valueOf(cell.getBooleanCellValue());
+                                }
+
+                                if (!value.trim().isEmpty()) {
+                                    if (mergedValues.length() > 0) {
+                                        mergedValues.append(", ");
+                                    }
+                                    mergedValues.append(value.trim());
+                                }
+                            }
+                        }
+                        // Write the merged value to the target column
+                        Cell targetCell = row.getCell(targetColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                        targetCell.setCellValue(mergedValues.toString());
+
+                        // Clear the other duplicate columns
+                        for (int i = 1; i < indices.size(); i++) {
+                            Cell cellToRemove = row.getCell(indices.get(i), Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                            cellToRemove.setBlank();
+                        }
+                    }
                 }
+                //Remove the header from the extra columns.
+                for (int i = 1; i < indices.size(); i++) {
+                    Cell cellToRemove = headerRow.getCell(indices.get(i), Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    cellToRemove.setBlank();
+                }
+
             }
         }
-        return -1; // Column not found
     }
 }
