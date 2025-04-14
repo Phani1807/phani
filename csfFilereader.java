@@ -10,25 +10,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MergeDuplicateColumns {
+public class MergeDuplicateColumnsSameFile {
 
     public static void main(String[] args) {
-    	String filePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\FEED_MSTR.xlsx"; // Replace with your input file path
-        String outputFilePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\output.xlsx"; // Replace with your output file path
-
+        String filePath = "your_excel_file.xlsx"; // Replace with your file path
 
         try (FileInputStream fis = new FileInputStream(filePath);
-             Workbook workbook = new XSSFWorkbook(fis)) {
+             XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
 
             if (sheet != null) {
                 mergeDuplicateColumns(sheet);
 
-                try (FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+                try (FileOutputStream fos = new FileOutputStream(filePath)) { // Save to the same file
                     workbook.write(fos);
                 }
-                System.out.println("Duplicate columns merged and saved to: " + outputFilePath);
+                System.out.println("Duplicate columns merged and saved to the same file: " + filePath);
             } else {
                 System.out.println("Sheet not found.");
             }
@@ -107,9 +105,6 @@ public class MergeDuplicateColumns {
         }
     }
 }
-
-
-
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
