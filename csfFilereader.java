@@ -107,3 +107,121 @@ public class MergeDuplicateColumns {
         }
     }
 }
+
+
+
+
+
+
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+public class MergeSpecificColumns {
+
+    public static void main(String[] args) {
+        String filePath = "your_excel_file.xlsx"; // Replace with your file path
+        String outputFilePath = "output_excel_file.xlsx";
+        List<String> columnsToMerge = Arrays.asList("inward", "outward", "inward 2", "outward 2");
+        String targetColumnName = "Issue_Link";
+
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            if (sheet != null) {
+                mergeSpecificColumns(sheet, columnsToMerge, targetColumnName);
+
+                try (FileOutputStream fos = new FileOutputStream(outputFilePath)) {
+                    workbook.write(fos);
+                }
+                System.out.println("Specific columns merged and saved to: " + outputFilePath);
+            } else {
+                System.out.println("Sheet not found.");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void mergeSpecificColumns(Sheet sheet, List<String> columnsToMerge, String targetColumnName) {
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            return;
+        }
+
+        int targetColumnIndex = -1;
+        List<Integer> sourceColumnIndices = new java.util.ArrayList<>();
+
+        // Find the indices of the columns to merge and the target column
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            Cell cell = headerRow.getCell(i);
+            if (cell != null && cell.getCellType() == CellType.STRING) {
+                String columnName = cell.getStringCellValue().trim();
+                if (columnsToMerge.contains(columnName)) {
+                    sourceColumnIndices.add(i);
+                } else if (columnName.equals(targetColumnName)) {
+                    targetColumnIndex = i;
+                }
+            }
+        }
+
+        // If the target column doesn't exist, create it
+        if (targetColumnIndex == -1) {
+            targetColumnIndex = headerRow.getLastCellNum();
+            Cell newHeaderCell = headerRow.createCell(targetColumnIndex);
+            newHeaderCell.setCellValue(targetColumnName);
+        }
+
+        // Merge the data
+        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row != null) {
+                StringBuilder mergedValues = new StringBuilder();
+                for (int columnIndex : sourceColumnIndices) {
+                    Cell cell = row.getCell(columnIndex);
+                    if (cell != null && cell.getCellType() != CellType.BLANK) {
+
+                        String value = "";
+                        if(cell.getCellType() == CellType.STRING){
+                            value = cell.getStringCellValue();
+                        }else if (cell.getCellType() == CellType.NUMERIC){
+                            value = String.valueOf(cell.getNumericCellValue());
+                        }else if (cell.getCellType() == CellType.BOOLEAN){
+                            value = String.valueOf(cell.getBooleanCellValue());
+                        }
+
+                        if (!value.trim().isEmpty()) {
+                            if (mergedValues.length() > 0) {
+                                mergedValues.append(", ");
+                            }
+                            mergedValues.append(value.trim());
+                        }
+                    }
+                }
+
+                Cell targetCell = row.getCell(targetColumnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                targetCell.setCellValue(mergedValues.toString());
+
+                // Clear the source columns
+                for (int columnIndex : sourceColumnIndices) {
+                    Cell cellToRemove = row.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    cellToRemove.setBlank();
+
+                }
+            }
+        }
+        for (int columnIndex : sourceColumnIndices) {
+            Cell cellToRemove = headerRow.getCell(columnIndex, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            cellToRemove.setBlank();
+        }
+    }
+}
