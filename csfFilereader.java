@@ -1,87 +1,50 @@
-public class MapToExcelConverter {
+String currentProduct = null;
+            int productMergeStart = -1;
+            String currentKeyLevel2 = null;
+            int keyLevel2MergeStart = -1;
 
-    public static void main(String[] args) {
-        // Sample data (replace with your actual Map)
-        Map<String, Map<String, Map<String, Set<String>>>> myNestedMap = Map.of(
-                "productA", Map.of(
-                        "color", Map.of(
-                                "red", Set.of("small", "medium"),
-                                "blue", Set.of("large")
-                        ),
-                        "material", Map.of(
-                                "cotton", Set.of("available"),
-                                "silk", Set.of("out of stock")
-                        )
-                ),
-                "productB", Map.of(
-                        "size", Map.of(
-                                "s", Set.of("in stock"),
-                                "m", Set.of("low stock")
-                        )
-                )
-        );
+            for (int i = 0; i < data.size(); i++) {
+                List<String> rowData = data.get(i);
+                Row row = sheet.createRow(rowNum++);
+                String product = rowData.get(0);
+                String keyLevel2 = rowData.get(1);
+                String keyLevel3 = rowData.get(2);
+                String value = rowData.get(3);
 
-        String targetProduct = "productA";
-        List<List<String>> excelData = fetchDataForProduct(myNestedMap, targetProduct);
-        String outputFilePath = "C:\\Users\\inahp\\eclipse-workspace\\ImageToExcel\\src\\main\\resources\\images\\productA_data.xlsx";
-        writeToExcel(excelData, outputFilePath);
-    }
+                row.createCell(0).setCellValue(product);
+                row.createCell(1).setCellValue(keyLevel2);
+                row.createCell(2).setCellValue(keyLevel3);
+                row.createCell(3).setCellValue(value);
 
-    public static List<List<String>> fetchDataForProduct(Map<String, Map<String, Map<String, Set<String>>>> nestedMap, String targetProduct) {
-        List<List<String>> excelData = new ArrayList<>();
+                // Merge cells for "Product"
+                if (!product.equals(currentProduct)) {
+                    if (productMergeStart != -1 && i > productMergeStart) {
+                        sheet.addMergedRegion(new CellRangeAddress(productMergeStart + 1, i, 0, 0));
+                    }
+                    currentProduct = product;
+                    productMergeStart = i;
+                    keyLevel2MergeStart = i; // Reset Key Level 2 merge start when Product changes
+                    currentKeyLevel2 = keyLevel2;
+                }
 
-        if (nestedMap.containsKey(targetProduct)) {
-            Map<String, Map<String, Set<String>>> productData = nestedMap.get(targetProduct);
-            String key1 = targetProduct; // The first key is now fixed
+                // Merge cells for "Key Level 2"
+                if (product.equals(currentProduct)) {
+                    if (!keyLevel2.equals(currentKeyLevel2)) {
+                        if (keyLevel2MergeStart != -1 && i > keyLevel2MergeStart) {
+                            sheet.addMergedRegion(new CellRangeAddress(keyLevel2MergeStart + 1, i, 1, 1));
+                        }
+                        currentKeyLevel2 = keyLevel2;
+                        keyLevel2MergeStart = i;
+                    }
+                }
 
-            for (Map.Entry<String, Map<String, Set<String>>> entryLevel2 : productData.entrySet()) {
-                String key2 = entryLevel2.getKey();
-                for (Map.Entry<String, Set<String>> entryLevel3 : entryLevel2.getValue().entrySet()) {
-                    String key3 = entryLevel3.getKey();
-                    for (String value : entryLevel3.getValue()) {
-                        List<String> rowData = new ArrayList<>();
-                        rowData.add(key1);
-                        rowData.add(key2);
-                        rowData.add(key3);
-                        rowData.add(value);
-                        excelData.add(rowData);
+                // Handle the last row for merging
+                if (i == data.size() - 1) {
+                    if (productMergeStart != -1 && i >= productMergeStart) {
+                        sheet.addMergedRegion(new CellRangeAddress(productMergeStart + 1, i + 1, 0, 0));
+                    }
+                    if (keyLevel2MergeStart != -1 && i >= keyLevel2MergeStart) {
+                        sheet.addMergedRegion(new CellRangeAddress(keyLevel2MergeStart + 1, i + 1, 1, 1));
                     }
                 }
             }
-        } else {
-            System.out.println("Product '" + targetProduct + "' not found in the data.");
-        }
-        return excelData;
-    }
-
-    public static void writeToExcel(List<List<String>> data, String filePath) {
-        try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Data");
-
-            // Create header row (optional)
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("Product");
-            headerRow.createCell(1).setCellValue("Key Level 2");
-            headerRow.createCell(2).setCellValue("Key Level 3");
-            headerRow.createCell(3).setCellValue("Value");
-
-            int rowNum = 1;
-            for (List<String> rowData : data) {
-                Row row = sheet.createRow(rowNum++);
-                int colNum = 0;
-                for (String cellData : rowData) {
-                    Cell cell = row.createCell(colNum++);
-                    cell.setCellValue(cellData);
-                }
-            }
-
-            // Write the workbook to a file
-            try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
-                workbook.write(outputStream);
-            }
-            System.out.println("Data for '" + filePath + "' written to Excel successfully!");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
