@@ -1,0 +1,73 @@
+  FileInputStream fileIn = new FileInputStream(filePath);
+        Workbook workbook = new XSSFWorkbook(fileIn);
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // Find header row and column indices
+        Row headerRow = sheet.getRow(4); // row 5 is index 4
+        int testCaseIdCol = -1;
+        int testResultCol = -1;
+        int testClassCol = -1;
+        int commentsCol = -1;
+
+        for (Cell cell : headerRow) {
+            String header = cell.getStringCellValue();
+            if ("Test Case ID".equals(header)) {
+                testCaseIdCol = cell.getColumnIndex();
+            } else if ("Test Result".equals(header)) {
+                testResultCol = cell.getColumnIndex();
+            } else if ("Test Class".equals(header)) {
+                testClassCol = cell.getColumnIndex();
+            } else if (header.contains("Comments")) {
+                commentsCol = cell.getColumnIndex();
+            }
+        }
+
+        // Iterate through rows starting from the data rows
+        for (int i = 5; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+
+            Cell testCaseIdCell = row.getCell(testCaseIdCol);
+            String testCaseId = (testCaseIdCell != null) ? testCaseIdCell.getStringCellValue() : null;
+
+            if (testCaseId != null && jirasMap.containsKey(testCaseId)) {
+                // Case 1: Match found in jirasMap
+                Cell testResultCell = (row.getCell(testResultCol) == null) ? row.createCell(testResultCol) : row.getCell(testResultCol);
+                testResultCell.setCellValue(jirasMap.get(testCaseId));
+
+                if ("Functional".equalsIgnoreCase(labels)) {
+                    // Case 1A
+                    Cell testClassCell = (row.getCell(testClassCol) == null) ? row.createCell(testClassCol) : row.getCell(testClassCol);
+                    testClassCell.setCellValue("Functional And Sit Testing");
+
+                    Cell commentsCell = (row.getCell(commentsCol) == null) ? row.createCell(commentsCol) : row.getCell(commentsCol);
+                    commentsCell.setCellValue("These Entries are similar for Functional And Sit");
+                } else if ("Regression".equalsIgnoreCase(labels)) {
+                    // Case 1B
+                    Cell testClassCell = (row.getCell(testClassCol) == null) ? row.createCell(testClassCol) : row.getCell(testClassCol);
+                    testClassCell.setCellValue("Regression Testing");
+
+                    Cell commentsCell = (row.getCell(commentsCol) == null) ? row.createCell(commentsCol) : row.getCell(commentsCol);
+                    commentsCell.setCellValue("passed Regression testCases");
+                }
+            } else if (testCaseId == null || testCaseId.trim().isEmpty()) {
+                // Case 2: Test Case ID is null or empty
+                Cell testCaseCell = (row.getCell(testCaseIdCol) == null) ? row.createCell(testCaseIdCol) : row.getCell(testCaseIdCol);
+                testCaseCell.setCellValue("Functional and SIT Not Applicable");
+
+                Cell testResultCell = (row.getCell(testResultCol) == null) ? row.createCell(testResultCol) : row.getCell(testResultCol);
+                testResultCell.setCellValue("Functional and SIT Not Applicable");
+
+                Cell commentsCell = (row.getCell(commentsCol) == null) ? row.createCell(commentsCol) : row.getCell(commentsCol);
+                commentsCell.setCellValue("SIT Testing is not Required");
+            }
+        }
+
+        // Write the changes to the file
+        fileIn.close();
+        FileOutputStream fileOut = new FileOutputStream(filePath);
+        workbook.write(fileOut);
+        fileOut.close();
+        workbook.close();
