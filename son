@@ -1,0 +1,11 @@
+JSONObject versionObject = new JSONObject();
+        versionObject.put("name", "GERC_FFS");
+
+        JSONArray versionsArray = new JSONArray();
+        versionsArray.put(versionObject);
+
+        JSONObject fieldsObject = new JSONObject();
+        fieldsObject.put("versions", versionsArray);
+
+        JSONObject rootObject = new JSONObject();
+        rootObject.put("fields", fieldsObject);
